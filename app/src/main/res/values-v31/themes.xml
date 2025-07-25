@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Asosiy ilova temasi (v31 uchun qayta aniqlash shart emas, lekin moslik uchun) -->
+    <style name="Theme.IrregularVerbs" parent="Theme.MaterialComponents.NoActionBar">
+        <item name="android:fontFamily">@font/mplusrounded1c_extrabold</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowIsTranslucent">true</item>
+<!--        <item name="android:statusBarColor">@android:color/transparent</item>-->
+<!--        <item name="android:navigationBarColor">@android:color/transparent</item>-->
+    </style>
+
+    <!-- Splash Screen API uchun tema -->
+    <style name="Theme.App.Starting" parent="Theme.SplashScreen">
+        <!-- Splash ekran fon rangi -->
+        <item name="windowSplashScreenBackground">@color/blue</item>
+        <!-- Splash ekran animatsiya davomiyligi -->
+        <item name="windowSplashScreenAnimationDuration">500</item>
+        <!-- Splash ekrandan keyin asosiy ilova temasi -->
+        <item name="postSplashScreenTheme">@style/Theme.IrregularVerbs</item>
+        <!-- Logotip (ixtiyoriy) -->
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_logo_animation</item>
+    </style>
+</resources>

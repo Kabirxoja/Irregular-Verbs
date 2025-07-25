@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Asosiy ilova temasi -->
+    <style name="Theme.IrregularVerbs" parent="Theme.MaterialComponents.NoActionBar">
+        <item name="android:fontFamily">@font/mplusrounded1c_extrabold</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowIsTranslucent">true</item>
+<!--        <item name="android:statusBarColor">@android:color/transparent</item>-->
+<!--        <item name="android:navigationBarColor">@android:color/transparent</item>-->
+    </style>
+
+
+</resources>
