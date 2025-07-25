@@ -12,7 +12,7 @@ An Android app to learn and practice English irregular verbs through interactive
 </p>
 
 # 📸 Screenshot
-<img width="1629" height="1451" alt="iverb" src="https://github.com/user-attachments/assets/9e8ca294-6034-428c-967b-fcdc38e2120b" />
+<img width="1962" height="951" alt="iverb" src="https://github.com/user-attachments/assets/c884ec25-c21c-464c-8bf5-784942c05012" />
 
 
 # ✨ Features
