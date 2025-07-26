@@ -2,10 +2,7 @@ package uz.kabir.irregularverbs.presentation.ui.utils
 
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
-import android.widget.Toast
 import androidx.core.net.toUri
-import androidx.core.content.ContextCompat.startActivity
 
 class ReportManager(private val context: Context) {
     fun sendBugReport(testNumber: Int, testVerb: String) {

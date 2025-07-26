@@ -1,6 +1,5 @@
 package uz.kabir.irregularverbs.presentation.ui.screens.setting
 
-import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

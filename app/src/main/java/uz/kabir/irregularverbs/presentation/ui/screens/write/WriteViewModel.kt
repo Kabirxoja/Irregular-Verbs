@@ -1,6 +1,5 @@
 package uz.kabir.irregularverbs.presentation.ui.screens.write
 
-import android.content.Context
 import android.util.Log
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.text.AnnotatedString

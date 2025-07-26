@@ -68,7 +68,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -80,12 +79,10 @@ import uz.kabir.irregularverbs.presentation.ui.state.LanguageState
 import uz.kabir.irregularverbs.presentation.ui.state.TextMode
 import uz.kabir.irregularverbs.presentation.ui.state.TextState
 import uz.kabir.irregularverbs.presentation.ui.state.ThemeMode
-import uz.kabir.irregularverbs.presentation.ui.theme.Cream
 import uz.kabir.irregularverbs.presentation.ui.theme.CustomTheme
 import uz.kabir.irregularverbs.domain.model.Profile
 import androidx.core.net.toUri
 import uz.kabir.irregularverbs.presentation.ui.theme.Green
-import uz.kabir.irregularverbs.presentation.ui.theme.Red
 import uz.kabir.irregularverbs.presentation.ui.utils.SoundManager
 
 

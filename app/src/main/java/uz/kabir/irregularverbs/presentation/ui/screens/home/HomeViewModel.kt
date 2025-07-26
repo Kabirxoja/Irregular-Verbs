@@ -1,6 +1,5 @@
 package uz.kabir.irregularverbs.presentation.ui.screens.home
 
-import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -17,7 +16,6 @@ import uz.kabir.irregularverbs.data.remote.network.NetworkMonitor
 import uz.kabir.irregularverbs.domain.model.UserProgress
 import uz.kabir.irregularverbs.domain.usecase.GetProgressUseCase
 import uz.kabir.irregularverbs.domain.usecase.GetSoundStateUseCase
-import uz.kabir.irregularverbs.presentation.ui.utils.SoundManager
 import javax.inject.Inject
 
 @HiltViewModel
