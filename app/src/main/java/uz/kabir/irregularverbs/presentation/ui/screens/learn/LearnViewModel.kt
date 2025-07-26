@@ -4,9 +4,11 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -15,7 +17,7 @@ import uz.kabir.irregularverbs.domain.usecase.GetLanguageUseCase
 import uz.kabir.irregularverbs.domain.usecase.GetSoundStateUseCase
 import uz.kabir.irregularverbs.domain.usecase.GetVerbsByLevelUseCase
 import uz.kabir.irregularverbs.presentation.ui.state.AppLanguage
-import uz.kabir.irregularverbs.presentation.ui.utils.AudioHelper
+import uz.kabir.irregularverbs.presentation.ui.utils.SoundManager
 import uz.kabir.irregularverbs.presentation.ui.utils.TTSManager
 import javax.inject.Inject
 
@@ -36,8 +38,17 @@ class LearnViewModel @Inject constructor(
     val soundState: StateFlow<Boolean> = getSoundStateUseCase().stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
-        initialValue = false,
+        initialValue = false
     )
+
+    private val _playClick = MutableSharedFlow<Unit>()
+    val playClick = _playClick.asSharedFlow()
+
+    fun playSound() {
+        viewModelScope.launch {
+            _playClick.emit(Unit)
+        }
+    }
 
 
     fun getVerbsByLevel(level: String) {
@@ -55,24 +66,19 @@ class LearnViewModel @Inject constructor(
     private val _isTtsReady = MutableStateFlow(false)
     val isTtsReady = _isTtsReady.asStateFlow()
 
-    fun initTTS(){
+    fun initTTS() {
         ttsManager.init {
             _isTtsReady.value = true
         }
     }
 
-    fun speak(text: String){
+    fun speak(text: String) {
         ttsManager.speak(text)
     }
 
-    fun shutDown(){
+    fun shutDown() {
         ttsManager.shutdown()
     }
 
-    fun playClickSound(context: Context) {
-        if (soundState.value) {
-            AudioHelper.playClick(context)
-        }
-    }
 
 }

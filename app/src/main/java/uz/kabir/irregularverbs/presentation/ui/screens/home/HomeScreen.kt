@@ -1,6 +1,7 @@
 package uz.kabir.irregularverbs.presentation.ui.screens.home
 
 import android.content.Context
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
@@ -63,6 +64,7 @@ import uz.kabir.irregularverbs.presentation.ui.theme.LightGray
 import uz.kabir.irregularverbs.presentation.ui.theme.Orange
 import uz.kabir.irregularverbs.presentation.ui.theme.White
 import uz.kabir.irregularverbs.presentation.ui.theme.Yellow
+import uz.kabir.irregularverbs.presentation.ui.utils.SoundManager
 
 
 @Composable
@@ -70,6 +72,11 @@ fun HomeFragment(
     navHostController: NavHostController,
     homeViewModel: HomeViewModel = hiltViewModel()
 ) {
+
+    val context = LocalContext.current
+    val soundManager = remember { SoundManager(context) }
+    val soundState by homeViewModel.soundState.collectAsState()
+
     LaunchedEffect(Unit) {
         homeViewModel.navigationChannel.collect { event ->
             when (event) {
@@ -88,9 +95,14 @@ fun HomeFragment(
         }
     }
 
-    val context = LocalContext.current
+    LaunchedEffect(Unit) {
+        homeViewModel.playClick.collect {
+            soundManager.playClickSound()
+        }
+    }
+
+
     val testProgress by homeViewModel.testProgress.collectAsState()
-    val soundState by homeViewModel.soundState.collectAsState()
     val configuration = LocalConfiguration.current
     val isTablet = configuration.screenWidthDp >= 580
 
@@ -99,7 +111,7 @@ fun HomeFragment(
         modifier = Modifier.fillMaxWidth(),
         color = CustomTheme.colors.backgroundColor
     ) {
-        MyGridLayout(testProgress, isTablet, homeViewModel, context)
+        MyGridLayout(testProgress, isTablet, homeViewModel, context, soundState)
     }
 }
 
@@ -110,7 +122,8 @@ fun MyGridLayout(
     items: List<UserProgress?>,
     isTablet: Boolean,
     homeViewModel: HomeViewModel,
-    context: Context
+    context: Context,
+    soundState: Boolean
 ) {
 
     val coroutineScope = rememberCoroutineScope()
@@ -133,7 +146,12 @@ fun MyGridLayout(
     ) {
         itemsIndexed(items) { index, item ->
             GridItem(item, coroutineScope, onClick = {
-                homeViewModel.playClickSound(context)
+
+
+                if(soundState){
+                    homeViewModel.playSound()
+                }
+
 
                 if (item?.testState != -1) {
                     showBottomSheet = true
@@ -167,7 +185,7 @@ fun MyGridLayout(
                     onClose = { showBottomSheet = false },
                     homeViewModel,
                     selectedItem,
-                    context
+                    soundState
                 )
             }
         }
@@ -182,7 +200,7 @@ fun BottomSheetContent(
     onClose: () -> Unit,
     homeViewModel: HomeViewModel,
     selectedItemBottomSheet: UserProgress,
-    context:Context
+    soundState: Boolean
 ) {
 
     Column(
@@ -241,7 +259,10 @@ fun BottomSheetContent(
                                 onClose()
                             }
                             homeViewModel.toOptionScreen(groupId = selectedItemBottomSheet.groupId)
-                            homeViewModel.playClickSound(context)
+                            if(soundState){
+                                homeViewModel.playSound()
+                            }
+
                         },
                         modifier = Modifier
                             .padding(vertical = 4.dp)
@@ -284,7 +305,9 @@ fun BottomSheetContent(
                                 onClose()
                             }
                             homeViewModel.toListenScreen(groupId = selectedItemBottomSheet.groupId)
-                            homeViewModel.playClickSound(context)
+                            if(soundState){
+                                homeViewModel.playSound()
+                            }
                         },
                         modifier = Modifier
                             .padding(4.dp)
@@ -327,7 +350,9 @@ fun BottomSheetContent(
                                 onClose()
                             }
                             homeViewModel.toWriteScreen(groupId = selectedItemBottomSheet.groupId)
-                            homeViewModel.playClickSound(context)
+                            if(soundState){
+                                homeViewModel.playSound()
+                            }
                         },
                         modifier = Modifier
                             .padding(4.dp)

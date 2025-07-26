@@ -42,6 +42,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -84,6 +85,8 @@ import uz.kabir.irregularverbs.presentation.ui.theme.CustomTheme
 import uz.kabir.irregularverbs.domain.model.Profile
 import androidx.core.net.toUri
 import uz.kabir.irregularverbs.presentation.ui.theme.Green
+import uz.kabir.irregularverbs.presentation.ui.theme.Red
+import uz.kabir.irregularverbs.presentation.ui.utils.SoundManager
 
 
 @Composable
@@ -93,9 +96,16 @@ fun SettingsFragment(
 ) {
     val userProgress by settingsViewModel.overallProgressPercentage.collectAsState()
     val userProfile by settingsViewModel.profile.collectAsState()
-    val soundState by settingsViewModel.soundState.collectAsState()
 
     val context = LocalContext.current
+    val soundManager = remember { SoundManager(context) }
+    val soundState by settingsViewModel.soundState.collectAsState()
+
+    LaunchedEffect(Unit) {
+        settingsViewModel.playClick.collect {
+            soundManager.playClickSound()
+        }
+    }
 
 
     Log.d("userProfile", "userGender: ${userProfile?.userGender}")
@@ -117,12 +127,20 @@ fun SettingsFragment(
                 profileName = userProfile?.userName ?: "",
                 onProfileSettingsClick = {
                     showBottomSheetProfile = true
-                    settingsViewModel.playClickSound(context)
+
+                    if (soundState) {
+                        settingsViewModel.playSound()
+                    }
+
 
                 },
                 onSoundClick = { isEnabled ->
                     settingsViewModel.toggleSound(isEnabled)
-                    settingsViewModel.playClickSound(context)
+
+                    if (soundState) {
+                        settingsViewModel.playSound()
+                    }
+
                 },
                 soundState = soundState,
             )
@@ -133,11 +151,17 @@ fun SettingsFragment(
 
             Spacer(modifier = Modifier.height(18.dp))
 
-            SettingsList(settingsViewModel)
+            SettingsList(
+                settingsViewModel = settingsViewModel,
+                context = context,
+                soundState = soundState
+            )
 
             if (showBottomSheetProfile) {
                 BottomSheetProfile(
-                    onDismiss = { showBottomSheetProfile = false }, settingsViewModel, context
+                    onDismiss = { showBottomSheetProfile = false },
+                    settingsViewModel = settingsViewModel,
+                    soundState = soundState
                 )
             }
         }
@@ -146,7 +170,11 @@ fun SettingsFragment(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BottomSheetProfile(onDismiss: () -> Unit, settingsViewModel: SettingsViewModel, context: Context) {
+fun BottomSheetProfile(
+    onDismiss: () -> Unit,
+    settingsViewModel: SettingsViewModel,
+    soundState: Boolean
+) {
     var selectedAvatar: String? by remember { mutableStateOf(null) }
     var inputQuery by remember { mutableStateOf("") }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -181,7 +209,11 @@ fun BottomSheetProfile(onDismiss: () -> Unit, settingsViewModel: SettingsViewMod
                     onSelectionChanged = { selected ->
                         selectedAvatar = if (selected) "male" else null
                         //Click sound
-                        settingsViewModel.playClickSound(context)
+
+                        if (soundState) {
+                            settingsViewModel.playSound()
+                        }
+
                     }
                 )
                 ProfileItem(
@@ -190,7 +222,11 @@ fun BottomSheetProfile(onDismiss: () -> Unit, settingsViewModel: SettingsViewMod
                     onSelectionChanged = { selected ->
                         selectedAvatar = if (selected) "female" else null
                         //Click sound
-                        settingsViewModel.playClickSound(context)
+
+                        if (soundState) {
+                            settingsViewModel.playSound()
+                        }
+
                     }
                 )
             }
@@ -211,7 +247,11 @@ fun BottomSheetProfile(onDismiss: () -> Unit, settingsViewModel: SettingsViewMod
                     )
                     onDismiss()
                     //Click sound
-                    settingsViewModel.playClickSound(context)
+
+                    if (soundState) {
+                        settingsViewModel.playSound()
+                    }
+
                 },
                 text = stringResource(R.string.save).uppercase(),
                 buttonColor = Green
@@ -453,26 +493,19 @@ fun ProfileHeader(
                 .size(136.dp)
         )
 
-        Box(
+        Column(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxHeight()
         ) {
-            Column(
+            Row(
                 modifier = Modifier
                     .fillMaxHeight()
                     .padding(end = 16.dp)
-                    .align(Alignment.CenterEnd)
+                    .align(Alignment.End),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.End,
             ) {
-
-
-                ImageProfileButton(
-                    iconResId = R.drawable.ic_profile,
-                    onClick = onProfileSettingsClick,
-                    modifier = Modifier.size(36.dp)
-                )
-
-                Spacer(modifier = Modifier.height(32.dp))
 
                 SoundButton(
                     onSoundClick = onSoundClick,
@@ -480,8 +513,13 @@ fun ProfileHeader(
                     modifier = Modifier.size(36.dp)
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.width(16.dp))
 
+                ImageProfileButton(
+                    iconResId = R.drawable.ic_profile,
+                    onClick = onProfileSettingsClick,
+                    modifier = Modifier.size(36.dp)
+                )
 
             }
 
@@ -492,7 +530,7 @@ fun ProfileHeader(
                 style = CustomTheme.typography.largeText,
                 modifier = Modifier
                     .padding(start = 12.dp, bottom = 6.dp)
-                    .align(Alignment.BottomStart)
+
             )
         }
     }
@@ -551,7 +589,7 @@ fun SoundButton(
         contentDescription = "Profile settings button",
         modifier = modifier
             .graphicsLayer(scaleX.value, scaleY.value)
-            .padding(4.dp)
+            .padding(2.dp)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null
@@ -633,14 +671,17 @@ fun ResultsCard(
 }
 
 @Composable
-fun SettingsList(settingsViewModel: SettingsViewModel) {
+fun SettingsList(
+    settingsViewModel: SettingsViewModel,
+    context: Context,
+    soundState: Boolean
+) {
     var showBottomSheetLanguage by remember { mutableStateOf(false) }
     var showBottomSheetTheme by remember { mutableStateOf(false) }
     var showBottomSheetTextSize by remember { mutableStateOf(false) }
 
-    val context = LocalContext.current
     val appPackageName = "uz.kabir.irregularverbs"
-    val activity = context as Activity
+    val activity = context as? Activity
 
     Column(modifier = Modifier.fillMaxHeight()) {
         Text(
@@ -654,14 +695,22 @@ fun SettingsList(settingsViewModel: SettingsViewModel) {
             //Translation
             showBottomSheetLanguage = true
             //Click sound
-            settingsViewModel.playClickSound(context)
+
+            if (soundState) {
+                settingsViewModel.playSound()
+            }
+
         }
         Spacer(modifier = Modifier.height(16.dp))
         SettingItem(R.drawable.ic_theme, stringResource(R.string.setting_theme).uppercase()) {
             //Theme
             showBottomSheetTheme = true
             //Click sound
-            settingsViewModel.playClickSound(context)
+
+            if (soundState) {
+                settingsViewModel.playSound()
+            }
+
 
         }
         Spacer(modifier = Modifier.height(16.dp))
@@ -672,7 +721,11 @@ fun SettingsList(settingsViewModel: SettingsViewModel) {
             //TExt size
             showBottomSheetTextSize = true
             //Click sound
-            settingsViewModel.playClickSound(context)
+
+            if (soundState) {
+                settingsViewModel.playSound()
+            }
+
         }
         Spacer(modifier = Modifier.height(16.dp))
         SettingItem(R.drawable.ic_share, stringResource(R.string.setting_share).uppercase()) {
@@ -688,35 +741,45 @@ fun SettingsList(settingsViewModel: SettingsViewModel) {
             context.startActivity(chooser)
 
             //Click sound
-            settingsViewModel.playClickSound(context)
+
+            if (soundState) {
+                settingsViewModel.playSound()
+            }
+
         }
         Spacer(modifier = Modifier.height(16.dp))
         SettingItem(R.drawable.ic_rate, stringResource(R.string.setting_rate).uppercase()) {
             //Rate
             try {
-                context.startActivity(
-                    Intent(
-                        Intent.ACTION_VIEW,
-                        "market://details?id=$appPackageName".toUri()
-                    )
-                )
+                val marketIntent =
+                    Intent(Intent.ACTION_VIEW, "market://details?id=$appPackageName".toUri())
+                        .apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
+                context.startActivity(marketIntent)
             } catch (e: ActivityNotFoundException) {
-                context.startActivity(
-                    Intent(
-                        Intent.ACTION_VIEW,
-                        "https://play.google.com/store/apps/details?id=$appPackageName".toUri()
-                    )
+                val webIntent = Intent(
+                    Intent.ACTION_VIEW,
+                    "https://play.google.com/store/apps/details?id=$appPackageName".toUri()
                 )
+                    .apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
+                context.startActivity(webIntent)
             }
             //Click sound
-            settingsViewModel.playClickSound(context)
+
+            if (soundState) {
+                settingsViewModel.playSound()
+            }
+
         }
         Spacer(modifier = Modifier.height(16.dp))
         SettingItem(R.drawable.ic_exit, stringResource(R.string.setting_exit).uppercase()) {
             //Exit
-            activity.finish()
+            activity?.finish()
             //Click sound
-            settingsViewModel.playClickSound(context)
+
+            if (soundState) {
+                settingsViewModel.playSound()
+            }
+
         }
     }
 
@@ -733,7 +796,11 @@ fun SettingsList(settingsViewModel: SettingsViewModel) {
                     LanguageState.currentLanguage = AppLanguage.UZBEK
                     showBottomSheetLanguage = false
                     //Click sound
-                    settingsViewModel.playClickSound(context)
+
+                    if (soundState) {
+                        settingsViewModel.playSound()
+                    }
+
                 }
             ),
             FlagOption(
@@ -745,7 +812,11 @@ fun SettingsList(settingsViewModel: SettingsViewModel) {
                     LanguageState.currentLanguage = AppLanguage.RUSSIAN
                     showBottomSheetLanguage = false
                     //Click sound
-                    settingsViewModel.playClickSound(context)
+
+                    if (soundState) {
+                        settingsViewModel.playSound()
+                    }
+
                 }
             ),
 
@@ -781,7 +852,11 @@ fun SettingsList(settingsViewModel: SettingsViewModel) {
                     settingsViewModel.setThemeMode(ThemeMode.LIGHT)
                     showBottomSheetTheme = false
                     //Click sound
-                    settingsViewModel.playClickSound(context)
+
+                    if (soundState) {
+                        settingsViewModel.playSound()
+                    }
+
                 }
             ),
             IconOption(
@@ -792,7 +867,11 @@ fun SettingsList(settingsViewModel: SettingsViewModel) {
                     settingsViewModel.setThemeMode(ThemeMode.DARK)
                     showBottomSheetTheme = false
                     //Click sound
-                    settingsViewModel.playClickSound(context)
+
+                    if (soundState) {
+                        settingsViewModel.playSound()
+                    }
+
                 }
             ),
             IconOption(
@@ -803,7 +882,11 @@ fun SettingsList(settingsViewModel: SettingsViewModel) {
                     settingsViewModel.setThemeMode(ThemeMode.SYSTEM)
                     showBottomSheetTheme = false
                     //Click sound
-                    settingsViewModel.playClickSound(context)
+
+                    if (soundState) {
+                        settingsViewModel.playSound()
+                    }
+
                 }
             )
         )
@@ -827,7 +910,11 @@ fun SettingsList(settingsViewModel: SettingsViewModel) {
                     TextState.currentTextSize = TextMode.SMALL
                     showBottomSheetTextSize = false
                     //Click sound
-                    settingsViewModel.playClickSound(context)
+
+                    if (soundState) {
+                        settingsViewModel.playSound()
+                    }
+
                 }
             ),
             IconOption(
@@ -839,7 +926,11 @@ fun SettingsList(settingsViewModel: SettingsViewModel) {
                     TextState.currentTextSize = TextMode.MEDIUM
                     showBottomSheetTextSize = false
                     //Click sound
-                    settingsViewModel.playClickSound(context)
+
+                    if (soundState) {
+                        settingsViewModel.playSound()
+                    }
+
                 }
             ),
             IconOption(
@@ -851,7 +942,11 @@ fun SettingsList(settingsViewModel: SettingsViewModel) {
                     TextState.currentTextSize = TextMode.BIG
                     showBottomSheetTextSize = false
                     //Click sound
-                    settingsViewModel.playClickSound(context)
+
+                    if (soundState) {
+                        settingsViewModel.playSound()
+                    }
+
                 }
             )
         )
@@ -918,7 +1013,7 @@ fun ThemeOption(
             Icon(
                 painter = painterResource(id = R.drawable.ic_checked),
                 contentDescription = "selected",
-                tint = CustomTheme.colors.mainGreen,
+                tint = Green,
                 modifier = Modifier.size(24.dp)
             )
         }
@@ -979,7 +1074,7 @@ fun LanguageOption(
             Icon(
                 painter = painterResource(id = R.drawable.ic_checked),
                 contentDescription = "selected",
-                tint = CustomTheme.colors.mainGreen,
+                tint = Green,
                 modifier = Modifier.size(24.dp)
             )
         }

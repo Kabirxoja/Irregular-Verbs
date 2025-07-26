@@ -29,11 +29,11 @@ import uz.kabir.irregularverbs.domain.usecase.GetVerbsByGroupIdUseCase
 import uz.kabir.irregularverbs.domain.usecase.UpdateProgressUseCase
 import uz.kabir.irregularverbs.presentation.ui.theme.DarkGreen
 import uz.kabir.irregularverbs.presentation.ui.theme.DarkRed
-import uz.kabir.irregularverbs.presentation.ui.utils.AudioHelper
 import uz.kabir.irregularverbs.presentation.ui.utils.toHighlightedColorText
 import javax.inject.Inject
 import kotlin.random.Random
 import androidx.core.net.toUri
+import kotlinx.coroutines.channels.Channel
 
 @HiltViewModel
 class OptionViewModel @Inject constructor(
@@ -76,8 +76,7 @@ class OptionViewModel @Inject constructor(
     private val _isFinished = MutableStateFlow(false)
     val isFinished: StateFlow<Boolean> = _isFinished
 
-    private val _getUserProgress =
-        MutableStateFlow<UserProgress>(UserProgress(0, 0, false, false, false))
+    private val _getUserProgress = MutableStateFlow<UserProgress>(UserProgress(0, 0, false, false, false))
     val getUserProgress: StateFlow<UserProgress> = _getUserProgress
 
     private val _navigationSharedFlow = MutableSharedFlow<OptionNavEvent>(extraBufferCapacity = 1)
@@ -86,11 +85,29 @@ class OptionViewModel @Inject constructor(
     private val _groupId = mutableIntStateOf(savedStateHandle["groupId"] ?: 0)
     val groupId: Int get() = _groupId.intValue
 
-    val soundState: StateFlow<Boolean> = getSoundStateUseCase().stateIn(
+    val soundState: StateFlow<Boolean> = getSoundStateUseCase.invoke().stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = false
     )
+
+    private val _playClick = MutableSharedFlow<Unit>()
+    val playClick = _playClick.asSharedFlow()
+
+    fun playSound() {
+        viewModelScope.launch {
+            _playClick.emit(Unit)
+        }
+    }
+
+    private val _sendReport = MutableSharedFlow<Unit>()
+    val sendReport = _sendReport.asSharedFlow()
+
+    fun sendReport(){
+        viewModelScope.launch {
+            _sendReport.emit(Unit)
+        }
+    }
 
     private val _timerStateFlow = MutableStateFlow(0)
     val timerStateFlow: StateFlow<Int> = _timerStateFlow
@@ -136,8 +153,7 @@ class OptionViewModel @Inject constructor(
         } else {
             // PAST PARTICIPLE HIDE, PAST SIMPLE SHOW
             correctAnswer = verb.pastParticiple
-            options =
-                listOf(verb.pastParticiple, verb.pastParticipleOption1, verb.pastParticipleOption2)
+            options = listOf(verb.pastParticiple, verb.pastParticipleOption1, verb.pastParticipleOption2)
             visiblePart = verb.pastSimple
         }
 
@@ -269,13 +285,12 @@ class OptionViewModel @Inject constructor(
         }
     }
 
-    fun playClickSound(context: Context){
-        if(soundState.value){
-            AudioHelper.playClick(context)
-        }
-    }
 
     fun reportIntent(context: Context){
+        Log.d("opktyj", "previous testState: ${_questions.value}")
+        Log.d("opktyj", "previous testState: ${_currentQuestion.value}")
+
+
         val intent = Intent(Intent.ACTION_SENDTO).apply {
             data = "mailto:".toUri()
             putExtra(Intent.EXTRA_EMAIL, arrayOf("kabirtechapps@gmail.com"))

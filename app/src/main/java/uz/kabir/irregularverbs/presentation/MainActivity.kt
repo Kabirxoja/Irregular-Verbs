@@ -26,8 +26,7 @@ import uz.kabir.irregularverbs.presentation.ui.screens.setting.SettingsViewModel
 import androidx.compose.runtime.getValue
 
 @AndroidEntryPoint
-class MainActivity() :
-    ComponentActivity() {
+class MainActivity : ComponentActivity() {
 
     private val viewModelSetting: SettingsViewModel by viewModels()
     private val viewModelActivity: MainActivityViewModel by viewModels()
@@ -36,23 +35,17 @@ class MainActivity() :
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-
         lifecycleScope.launch {
             viewModelActivity.syncProgress()
         }
 
-
-        viewModelSetting.getLanguage()
-
-        // Tilda o'zgarish kerak bo'lsa shu yerda apply qilinadi
-        lifecycleScope.launch {
-            viewModelSetting.languageCode.collect { languageCode ->
-//                LanguageApplier.applyLanguage(this@MainActivity, languageCode)
-                Log.d("TILIM", "Language: ${languageCode.locale}")
-            }
-        }
         setContent {
             val theme by viewModelActivity.theme.collectAsState()
+            val languageCode by viewModelSetting.languageCode.collectAsState()
+
+//            LaunchedEffect(languageCode) {
+//                LanguageApplier.applyLanguage(this@MainActivity, languageCode)
+//            }
 
             IrregularVerbsTheme(themeMode = theme) {
                 Surface(

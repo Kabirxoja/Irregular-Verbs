@@ -28,7 +28,6 @@ import uz.kabir.irregularverbs.domain.usecase.GetVerbsByGroupIdUseCase
 import uz.kabir.irregularverbs.domain.usecase.UpdateProgressUseCase
 import uz.kabir.irregularverbs.presentation.ui.theme.DarkGreen
 import uz.kabir.irregularverbs.presentation.ui.theme.DarkRed
-import uz.kabir.irregularverbs.presentation.ui.utils.AudioHelper
 import uz.kabir.irregularverbs.presentation.ui.utils.TTSManager
 import uz.kabir.irregularverbs.presentation.ui.utils.toHighlightedColorText
 import javax.inject.Inject
@@ -37,10 +36,10 @@ import kotlin.random.Random
 @HiltViewModel
 class ListenViewModel @Inject constructor(
     private val getVerbsByGroupIdUseCase: GetVerbsByGroupIdUseCase,
-    savedStateHandle: SavedStateHandle,
     private val updateProgressUseCase: UpdateProgressUseCase,
     private val getProgressUseCase: GetProgressUseCase,
     private val ttsManager: TTSManager,
+    savedStateHandle: SavedStateHandle,
     getSoundStateUseCase: GetSoundStateUseCase
 ) : ViewModel() {
 
@@ -83,8 +82,7 @@ class ListenViewModel @Inject constructor(
     val timerStateFlow: StateFlow<Int> = _timerStateFlow
     private var timerJob: Job? = null
 
-    private val _getUserProgress =
-        MutableStateFlow<UserProgress>(UserProgress(0, 0, false, false, false))
+    private val _getUserProgress = MutableStateFlow<UserProgress>(UserProgress(0, 0, false, false, false))
     val getUserProgress: StateFlow<UserProgress> = _getUserProgress
 
     private val _definitionEnglish = MutableStateFlow(AnnotatedString(""))
@@ -103,6 +101,24 @@ class ListenViewModel @Inject constructor(
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = false
     )
+
+    private val _playClick = MutableSharedFlow<Unit>()
+    val playClick = _playClick.asSharedFlow()
+
+    fun playSound() {
+        viewModelScope.launch {
+            _playClick.emit(Unit)
+        }
+    }
+
+    private val _sendReport = MutableSharedFlow<Unit>()
+    val sendReport = _sendReport.asSharedFlow()
+
+    fun sendReport(){
+        viewModelScope.launch {
+            _sendReport.emit(Unit)
+        }
+    }
 
     fun launchList() {
         viewModelScope.launch {
@@ -183,14 +199,11 @@ class ListenViewModel @Inject constructor(
         val alreadyUsed = _matched.value.any { it.first == v1 || it.second == v2v3 }
         if (alreadyUsed) return
 
-        val isCorrect =
-            visibleItems.value.any { it.verb1 == v1 && (it.verb2 == v2v3 || it.verb3 == v2v3) }
-        val updatedItem = visibleItems.value.find { it.verb1 == v1 }
-            ?.copy(selected = v1 to v2v3, isCorrect = isCorrect)
+        val isCorrect = visibleItems.value.any { it.verb1 == v1 && (it.verb2 == v2v3 || it.verb3 == v2v3) }
+        val updatedItem = visibleItems.value.find { it.verb1 == v1 }?.copy(selected = v1 to v2v3, isCorrect = isCorrect)
 
         val color = if (isCorrect) DarkGreen else DarkRed
-        _definitionEnglish.value =
-            (updatedItem?.example?.toHighlightedColorText(color) ?: "") as AnnotatedString
+        _definitionEnglish.value = (updatedItem?.example?.toHighlightedColorText(color) ?: "") as AnnotatedString
 
         updatedItem?.let {
             _results.value = _results.value + it
@@ -316,10 +329,6 @@ class ListenViewModel @Inject constructor(
         }
     }
 
-    fun playClickSound(context: Context){
-        if(soundState.value){
-            AudioHelper.playClick(context)
-        }
-    }
+
 
 }

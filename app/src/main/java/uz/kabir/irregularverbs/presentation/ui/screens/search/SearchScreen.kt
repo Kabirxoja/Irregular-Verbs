@@ -1,10 +1,8 @@
 package uz.kabir.irregularverbs.presentation.ui.screens.search
 
-import android.content.Context
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -39,6 +37,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
@@ -51,7 +50,7 @@ import uz.kabir.irregularverbs.presentation.ui.utils.toHighlightedColorText
 import uz.kabir.irregularverbs.presentation.ui.theme.Black
 import uz.kabir.irregularverbs.presentation.ui.theme.CustomTheme
 import uz.kabir.irregularverbs.presentation.ui.theme.Green
-import uz.kabir.irregularverbs.presentation.ui.screens.search.SearchViewModel
+import uz.kabir.irregularverbs.presentation.ui.utils.SoundManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,10 +58,6 @@ fun SearchFragment(
     navHostController: NavHostController,
     searchViewModel: SearchViewModel = hiltViewModel()
 ) {
-    LaunchedEffect(Unit) {
-        searchViewModel.getLanguage()
-        searchViewModel.fetchData()
-    }
 
     val searchQuery by searchViewModel.searchQuery.collectAsState()
     val searchResults by searchViewModel.searchResult.collectAsState()
@@ -73,7 +68,21 @@ fun SearchFragment(
     val coroutineScope = rememberCoroutineScope()
 
     val context = LocalContext.current
-    val soundOn by searchViewModel.soundState.collectAsState()
+    val soundManager = remember { SoundManager(context) }
+    val soundState by searchViewModel.soundState.collectAsState()
+
+    LaunchedEffect(Unit) {
+        searchViewModel.getLanguage()
+        searchViewModel.fetchData()
+    }
+
+    LaunchedEffect(Unit) {
+        searchViewModel.playClick.collect {
+            soundManager.playClickSound()
+        }
+    }
+
+
 
     val showBottomSheet = selectedItem != null
     if (showBottomSheet && selectedItem != null) {
@@ -97,7 +106,7 @@ fun SearchFragment(
                 query = searchQuery,
                 onQueryChanged = searchViewModel::setSearchWord,
                 searchViewModel = searchViewModel,
-                context = context
+                soundState = soundState
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -108,7 +117,9 @@ fun SearchFragment(
                         searchViewModel.selectItem(item) // bu bosilsa srazi viewmodelda o'zgaradi item
                         coroutineScope.launch { bottomSheetState.show() } // ochiladi
                         //Click sound
-                        searchViewModel.playClickSound(context)
+                        if (soundState){
+                            searchViewModel.playSound()
+                        }
                     })
                 }
             }
@@ -209,7 +220,7 @@ fun SearchTextField(
     modifier: Modifier = Modifier,
     hint: String = "Search...",
     searchViewModel: SearchViewModel,
-    context: Context
+    soundState: Boolean
 ) {
     val inputTextStyle = CustomTheme.typography.mediumText.copy(
         color = CustomTheme.colors.textBlackAndWhite,
@@ -234,7 +245,9 @@ fun SearchTextField(
                 IconButton(onClick = {
                     onQueryChanged("")
                     //Click sound
-                    searchViewModel.playClickSound(context)
+                    if (soundState){
+                        searchViewModel.playSound()
+                    }
                 }) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_cancel),

@@ -70,11 +70,7 @@ fun MainScreen() {
         BottomNavItem(Screens.Home.route, stringResource(R.string.home), R.drawable.ic_home),
         BottomNavItem(Screens.Learn.route, stringResource(R.string.learn), R.drawable.ic_book),
         BottomNavItem(Screens.Search.route, stringResource(R.string.search), R.drawable.ic_search),
-        BottomNavItem(
-            Screens.Settings.route,
-            stringResource(R.string.settings),
-            R.drawable.ic_settings
-        ),
+        BottomNavItem(Screens.Settings.route, stringResource(R.string.settings), R.drawable.ic_settings),
     )
 
     val currentBackStackEntry by innerNavController.currentBackStackEntryAsState()

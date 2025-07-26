@@ -64,6 +64,9 @@ import androidx.compose.ui.text.AnnotatedString
 import kotlinx.coroutines.flow.collectLatest
 import uz.kabir.irregularverbs.presentation.navigation.Screens
 import uz.kabir.irregularverbs.presentation.ui.screens.optionresult.MainButtonView
+import uz.kabir.irregularverbs.presentation.ui.theme.Red
+import uz.kabir.irregularverbs.presentation.ui.utils.ReportManager
+import uz.kabir.irregularverbs.presentation.ui.utils.SoundManager
 
 @SuppressLint("CoroutineCreationDuringComposition")
 @Composable
@@ -74,6 +77,7 @@ fun ListenFragment(
     val getList by listenViewModel.visibleItems.collectAsState()
     val showBottomSheet by listenViewModel.isBottomSheetVisible.collectAsState()
     val isCurrentQuestion by listenViewModel.lastMatchedItem.collectAsState()
+    val groupId = listenViewModel.groupId
     val selectedV1 by listenViewModel.selectedV1.collectAsState()
     val selectedV2V3 by listenViewModel.selectedV2V3.collectAsState()
     val matchedPairs by listenViewModel.matched.collectAsState()
@@ -81,11 +85,12 @@ fun ListenFragment(
     val definition by listenViewModel.definitionEnglish.collectAsState()
     val verb1 by listenViewModel.verb1List.collectAsState()
     val verb2Or3 by listenViewModel.verb2Or3List.collectAsState()
-    val soundState by listenViewModel.soundState.collectAsState()
 
     val context = LocalContext.current
+    val soundManager = SoundManager(context)
+    val soundState by listenViewModel.soundState.collectAsState()
 
-    Log.d("hhur", getList.toString())
+    val reportManager = remember { ReportManager(context) }
 
 
     LaunchedEffect(Unit) {
@@ -97,10 +102,23 @@ fun ListenFragment(
                 navController.navigate(Screens.ListenResult.passGroupId(event.groupId))
             }
         }
-
-        listenViewModel.initTTS()
-        listenViewModel.launchList()
     }
+
+    LaunchedEffect(Unit) {
+        listenViewModel.playClick.collect {
+            soundManager.playClickSound()
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        listenViewModel.sendReport.collect {
+            reportManager.sendBugReport(
+                testNumber = groupId,
+                testVerb = isCurrentQuestion?.verb1 ?: ""
+            )
+        }
+    }
+
 
     DisposableEffect(Unit) {
         listenViewModel.startTimer()
@@ -122,7 +140,9 @@ fun ListenFragment(
             TopBarListen(
                 onBackClick = {
                     navController.popBackStack()
-                    listenViewModel.playClickSound(context)
+                    if (soundState) {
+                        listenViewModel.playSound()
+                    }
                 },
                 timeSeconds = timeSeconds
             )
@@ -179,7 +199,9 @@ fun ListenFragment(
                 enabled = selectedV1 != "" && selectedV2V3 != "",
                 onCheckClick = {
                     listenViewModel.checkAnswer()
-                    listenViewModel.playClickSound(context)
+                    if (soundState) {
+                        listenViewModel.playSound()
+                    }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -195,7 +217,12 @@ fun ListenFragment(
                     definition = definition,
                     onDismiss = {
                         listenViewModel.continueToNextQuestion()
-                        listenViewModel.playClickSound(context)
+                        if (soundState) {
+                            listenViewModel.playSound()
+                        }
+                    },
+                    onReportClick = {
+                        listenViewModel.sendReport()
                     }
                 )
             }
@@ -235,7 +262,12 @@ fun CheckButtonListen(modifier: Modifier, onCheckClick: () -> Unit, enabled: Boo
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ListenBottomSheet(listenItem: ListenItem, definition: AnnotatedString, onDismiss: () -> Unit) {
+fun ListenBottomSheet(
+    listenItem: ListenItem,
+    definition: AnnotatedString,
+    onDismiss: () -> Unit,
+    onReportClick: () -> Unit,
+) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -244,7 +276,7 @@ fun ListenBottomSheet(listenItem: ListenItem, definition: AnnotatedString, onDis
         shape = RoundedCornerShape(topStart = 0.dp, topEnd = 0.dp)
     ) {
         val correct = listenItem.isCorrect
-        val color = if (correct) CustomTheme.colors.mainGreen else CustomTheme.colors.mainRed
+        val color = if (correct) Green else Red
         val text = if (correct) "Correct" else "Incorrect"
         val icon = if (correct) R.drawable.ic_correct else R.drawable.ic_incorrect
 
@@ -267,6 +299,21 @@ fun ListenBottomSheet(listenItem: ListenItem, definition: AnnotatedString, onDis
                     modifier = Modifier.padding(start = 8.dp),
                     style = CustomTheme.typography.largeText
                 )
+                Spacer(modifier = Modifier.weight(1f))
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_report),
+                    contentDescription = "Report",
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) {
+                            onReportClick()
+                        },
+                    tint = Color.Unspecified,
+
+                    )
             }
 
             Spacer(modifier = Modifier.height(12.dp))

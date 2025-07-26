@@ -52,6 +52,7 @@ import uz.kabir.irregularverbs.presentation.ui.theme.Orange
 import uz.kabir.irregularverbs.presentation.ui.theme.Red
 import uz.kabir.irregularverbs.presentation.ui.screens.write.WriteItem
 import uz.kabir.irregularverbs.presentation.ui.screens.write.WriteViewModel
+import uz.kabir.irregularverbs.presentation.ui.utils.SoundManager
 import java.util.Locale
 import kotlin.random.Random
 
@@ -61,6 +62,13 @@ fun WriteResultFragment(
     navController: NavHostController,
     writeViewModel: WriteViewModel
 ) {
+    val context = LocalContext.current
+    val soundManager = remember { SoundManager(context) }
+    val soundState by writeViewModel.soundState.collectAsState()
+
+    val result by writeViewModel.result.collectAsState()
+    val timerState by writeViewModel.timerStateFlow.collectAsState()
+    val correctAnswerCount = result.count { it.isCorrect }
 
     LaunchedEffect(Unit) {
         writeViewModel.navigationSharedFlow.collect { event ->
@@ -68,11 +76,14 @@ fun WriteResultFragment(
         }
     }
 
-    val result by writeViewModel.result.collectAsState()
-    val timerState by writeViewModel.timerStateFlow.collectAsState()
-    val correctAnswerCount = result.count { it.isCorrect }
-    val context = LocalContext.current
+    LaunchedEffect(Unit) {
+        writeViewModel.playClick.collect {
+            if (soundState){
+                writeViewModel.playSound()
+            }
 
+        }
+    }
 
     if (result.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -267,7 +278,10 @@ fun WriteResultFragment(
                 MainButtonView(
                     onClick = {
                         showBottomSheet = true
-                        writeViewModel.playClickSound(context)
+                        if (soundState){
+                            writeViewModel.playSound()
+                        }
+
                     },
                     text = stringResource(R.string.view_result),
                     buttonColor = LightGray
@@ -276,7 +290,10 @@ fun WriteResultFragment(
                 MainButtonView(
                     onClick = {
                         writeViewModel.toHomeScreen()
-                        writeViewModel.playClickSound(context)
+                        if (soundState){
+                            writeViewModel.playSound()
+                        }
+
                     },
                     text = stringResource(R.string.return_home),
                     buttonColor = Green

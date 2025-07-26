@@ -64,6 +64,7 @@ import uz.kabir.irregularverbs.presentation.ui.screens.option.OptionNavEvent
 import uz.kabir.irregularverbs.presentation.ui.theme.Black
 import uz.kabir.irregularverbs.presentation.ui.theme.Orange
 import uz.kabir.irregularverbs.presentation.ui.theme.Red
+import uz.kabir.irregularverbs.presentation.ui.utils.SoundManager
 import java.util.Locale
 import kotlin.random.Random
 
@@ -75,6 +76,15 @@ fun OptionResultFragment(
     navController: NavHostController
 ) {
 
+    val verbs by optionViewModel.verbs.collectAsState()
+    val questions by optionViewModel.questions.collectAsState()
+    val correctCount by optionViewModel.correctCount.collectAsState()
+    val timerState by optionViewModel.timerStateFlow.collectAsState()
+
+    val context = LocalContext.current
+    val soundManager = remember { SoundManager(context) }
+    val soundState by optionViewModel.soundState.collectAsState()
+
     LaunchedEffect(Unit) {
         optionViewModel.navigationSharedFlow.collect { event ->
             if (event is OptionNavEvent.NavigateToHome) {
@@ -83,13 +93,12 @@ fun OptionResultFragment(
                 }
             }
         }
-
     }
-    val verbs by optionViewModel.verbs.collectAsState()
-    val questions by optionViewModel.questions.collectAsState()
-    val correctCount by optionViewModel.correctCount.collectAsState()
-    val timerState by optionViewModel.timerStateFlow.collectAsState()
-    val context = LocalContext.current
+    LaunchedEffect(Unit) {
+        optionViewModel.playClick.collect {
+            soundManager.playClickSound()
+        }
+    }
 
     if (verbs.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -216,6 +225,8 @@ fun OptionResultFragment(
         optionViewModel.toHomeScreen()
     }
     Surface(modifier = Modifier.fillMaxSize(), color = CustomTheme.colors.backgroundColor) {
+        var showBottomSheet by remember { mutableStateOf(false) }
+        val bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
         Box(
             modifier = Modifier
@@ -268,8 +279,6 @@ fun OptionResultFragment(
                 )
             }
 
-            var showBottomSheet by remember { mutableStateOf(false) }
-            val bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
             Column(
                 modifier = Modifier.align(Alignment.BottomCenter),
@@ -279,7 +288,10 @@ fun OptionResultFragment(
                 MainButtonView(
                     onClick = {
                         showBottomSheet = true
-                        optionViewModel.playClickSound(context)
+                        if (soundState){
+                            optionViewModel.playSound()
+                        }
+
                     },
                     text = "View my results",
                     buttonColor = LightGray
@@ -288,7 +300,9 @@ fun OptionResultFragment(
                 MainButtonView(
                     onClick = {
                         optionViewModel.toHomeScreen()
-                        optionViewModel.playClickSound(context)
+                        if (soundState){
+                            optionViewModel.playSound()
+                        }
 
                     },
                     text = "Return Home Screen",

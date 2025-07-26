@@ -1,8 +1,15 @@
 package uz.kabir.irregularverbs.presentation.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -92,10 +99,6 @@ fun BottomNavigationBar(
                     items.forEach { item ->
                         val selected =
                             currentDestination?.hierarchy?.any { it.route == item.route } == true
-                        val scale by animateFloatAsState(
-                            targetValue = if (selected) 1.2f else 1f,
-                            label = "ScaleAnim"
-                        )
                         Column(
                             modifier = Modifier
                                 .weight(1f)
@@ -121,15 +124,13 @@ fun BottomNavigationBar(
                                 tint = if (selected) Green else CustomTheme.colors.mainGray,
                                 modifier = Modifier
                                     .size(28.dp)
-                                    .scale(scale)
                             )
 
                             AnimatedVisibility(visible = selected) {
                                 Text(
                                     text = item.label,
-                                    style = MaterialTheme.typography.labelLarge,
+                                    style = CustomTheme.typography.smallText,
                                     color = Green,
-                                    fontSize = 14.sp,
                                     modifier = Modifier.padding(top = 0.dp)
                                 )
                             }
@@ -143,20 +144,19 @@ fun BottomNavigationBar(
 
         Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(),
+                .fillMaxWidth(),
             contentAlignment = Alignment.BottomCenter
         ) {
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(72.dp)
-                    .drawBehind() {
+                    .drawBehind {
                         val strokeWidth = 2.dp.toPx()
                         drawLine(
-                            color = LightGray, // Your line color
-                            start = Offset(0f, 0f), // Top-left corner of the Surface
-                            end = Offset(size.width, 0f), // Top-right corner of the Surface
+                            color = LightGray,
+                            start = Offset(0f, 0f),
+                            end = Offset(size.width, 0f),
                             strokeWidth = strokeWidth
                         )
                     },
@@ -164,7 +164,6 @@ fun BottomNavigationBar(
                 shape = RoundedCornerShape(0.dp),
                 shadowElevation = 0.dp
             ) {
-
                 Row(
                     modifier = Modifier.fillMaxSize(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -173,14 +172,14 @@ fun BottomNavigationBar(
                     items.forEach { item ->
                         val selected =
                             currentDestination?.hierarchy?.any { it.route == item.route } == true
-                        val scale by animateFloatAsState(
-                            targetValue = if (selected) 1.2f else 1f,
-                            label = "ScaleAnim"
-                        )
+
                         Column(
                             modifier = Modifier
                                 .weight(1f)
-                                .clickable(indication = null, interactionSource = null) {
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null
+                                ) {
                                     navController.navigate(item.route) {
                                         popUpTo(navController.graph.startDestinationId) {
                                             saveState = true
@@ -188,38 +187,46 @@ fun BottomNavigationBar(
                                         launchSingleTop = true
                                         restoreState = true
                                     }
-
                                 }
-                                .padding(),
+                                .padding(vertical = 4.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center
                         ) {
 
-                            Icon(
-                                painter = painterResource(id = item.icon),
-                                contentDescription = item.label,
-                                tint = if (selected) Green else CustomTheme.colors.mainGray,
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
                                 modifier = Modifier
-                                    .size(28.dp)
-                                    .scale(scale)
-                            )
 
-                            AnimatedVisibility(visible = selected) {
-                                Text(
-                                    text = item.label,
-                                    style = MaterialTheme.typography.labelLarge,
-                                    color = Green,
-                                    fontSize = 14.sp,
-                                    modifier = Modifier.padding(top = 0.dp)
+                                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = item.icon),
+                                    contentDescription = item.label,
+                                    tint = if (selected) Green else CustomTheme.colors.mainGray,
+                                    modifier = Modifier
+                                        .size(28.dp)
                                 )
+
+                                AnimatedVisibility(
+                                    visible = selected,
+                                    enter = fadeIn(animationSpec = tween(50)),
+                                    exit = fadeOut(animationSpec = tween(0))
+                                ) {
+                                    Text(
+                                        text = item.label,
+                                        style = CustomTheme.typography.smallText,
+                                        color = Green,
+                                        modifier = Modifier.padding(top = 2.dp)
+                                    )
+                                }
                             }
                         }
                     }
                 }
-
             }
         }
     }
 }
+
 
 

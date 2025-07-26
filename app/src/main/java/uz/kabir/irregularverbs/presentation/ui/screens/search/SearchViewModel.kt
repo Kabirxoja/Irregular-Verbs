@@ -5,9 +5,11 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -16,7 +18,6 @@ import uz.kabir.irregularverbs.domain.usecase.GetLanguageUseCase
 import uz.kabir.irregularverbs.domain.usecase.GetSoundStateUseCase
 import uz.kabir.irregularverbs.domain.usecase.SearchUseCase
 import uz.kabir.irregularverbs.presentation.ui.state.AppLanguage
-import uz.kabir.irregularverbs.presentation.ui.utils.AudioHelper
 import javax.inject.Inject
 
 @HiltViewModel
@@ -37,11 +38,20 @@ class SearchViewModel @Inject constructor(
     private val _language = MutableStateFlow<AppLanguage>(AppLanguage.AUTO)
     val language: StateFlow<AppLanguage> = _language.asStateFlow()
 
-    val soundState: StateFlow<Boolean> = getSoundStateUseCase().stateIn(
+    val soundState: StateFlow<Boolean> = getSoundStateUseCase.invoke().stateIn(
         scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000), //problem here 5_000 different
-        initialValue = false,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = false
     )
+
+    private val _playClick = MutableSharedFlow<Unit>()
+    val playClick = _playClick.asSharedFlow()
+
+    fun playSound() {
+        viewModelScope.launch {
+            _playClick.emit(Unit)
+        }
+    }
 
     fun selectItem(item: IrregularVerbTranslated) {
         _selectedItem.value = item
@@ -90,16 +100,6 @@ class SearchViewModel @Inject constructor(
             _searchResult.value = searchUseCase("")
         }
     }
-
-    fun playClickSound(context: Context) {
-        viewModelScope.launch {
-            Log.d("SoundDebug", "Sound state: ${soundState.value}")
-            if (soundState.value) {
-                AudioHelper.playClick(context)
-            }
-        }
-    }
-
 
 
 }

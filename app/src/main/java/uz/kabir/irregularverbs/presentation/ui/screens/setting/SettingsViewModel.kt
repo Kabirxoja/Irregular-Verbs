@@ -5,9 +5,11 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.stateIn
@@ -31,11 +33,11 @@ import uz.kabir.irregularverbs.presentation.ui.state.ThemeState
 import uz.kabir.irregularverbs.domain.model.Profile
 import uz.kabir.irregularverbs.domain.usecase.GetSoundStateUseCase
 import uz.kabir.irregularverbs.domain.usecase.SaveSoundStateUseCase
-import uz.kabir.irregularverbs.presentation.ui.utils.AudioHelper
 import javax.inject.Inject
 
 @HiltViewModel
-class SettingsViewModel @Inject constructor(
+class
+SettingsViewModel @Inject constructor(
     private val saveThemeUseCase: SaveThemeUseCase,
     private val getThemeUseCase: GetThemeUseCase,
     private val saveTextSizeUseCase: SaveTextSizeUseCase,
@@ -65,11 +67,21 @@ class SettingsViewModel @Inject constructor(
     val overallProgressPercentage: StateFlow<Float> = _overallProgressPercentage.asStateFlow()
 
 
-    val soundState: StateFlow<Boolean> = getSoundStateUseCase().stateIn(
-        viewModelScope,
-        SharingStarted.WhileSubscribed(5_000),
+    val soundState: StateFlow<Boolean> = getSoundStateUseCase.invoke().stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
         initialValue = false
     )
+
+    private val _playClick = MutableSharedFlow<Unit>()
+    val playClick = _playClick.asSharedFlow()
+
+    fun playSound() {
+        viewModelScope.launch {
+            _playClick.emit(Unit)
+        }
+    }
+
 
     val profile: StateFlow<Profile?> = getProfileUseCase().stateIn(
         scope = viewModelScope,
@@ -158,12 +170,6 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun playClickSound(context: Context) {
-        viewModelScope.launch {
-            if (soundState.value) {
-                AudioHelper.playClick(context)
-            }
-        }
-    }
+
 
 }

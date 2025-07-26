@@ -5,9 +5,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -15,7 +17,7 @@ import uz.kabir.irregularverbs.data.remote.network.NetworkMonitor
 import uz.kabir.irregularverbs.domain.model.UserProgress
 import uz.kabir.irregularverbs.domain.usecase.GetProgressUseCase
 import uz.kabir.irregularverbs.domain.usecase.GetSoundStateUseCase
-import uz.kabir.irregularverbs.presentation.ui.utils.AudioHelper
+import uz.kabir.irregularverbs.presentation.ui.utils.SoundManager
 import javax.inject.Inject
 
 @HiltViewModel
@@ -39,6 +41,15 @@ class HomeViewModel @Inject constructor(
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = false
     )
+
+    private val _playClick = MutableSharedFlow<Unit>()
+    val playClick = _playClick.asSharedFlow()
+
+    fun playSound() {
+        viewModelScope.launch {
+            _playClick.emit(Unit)
+        }
+    }
 
 
     fun selectItem(item: UserProgress?) {
@@ -65,13 +76,6 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             _navigationChannel.send(HomeNavEvent.NavigateToOption(groupId))
         }
-    }
-
-    fun playClickSound(context: Context) {
-        if (soundState.value) {
-            AudioHelper.playClick(context)
-        }
-
     }
 
 

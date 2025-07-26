@@ -53,6 +53,7 @@ import uz.kabir.irregularverbs.presentation.ui.theme.Orange
 import uz.kabir.irregularverbs.presentation.ui.theme.Red
 import uz.kabir.irregularverbs.presentation.ui.screens.listen.ListenItem
 import uz.kabir.irregularverbs.presentation.ui.screens.listen.ListenNavEvent
+import uz.kabir.irregularverbs.presentation.ui.utils.SoundManager
 import java.util.Locale
 import kotlin.random.Random
 
@@ -76,8 +77,10 @@ fun ListenResultFragment(
     val result by listenViewModel.results.collectAsState()
     val timerState by listenViewModel.timerStateFlow.collectAsState()
     val correctAnswerCount = result.count { it.isCorrect }
-    val context = LocalContext.current
 
+    val context = LocalContext.current
+    val soundManager = remember { SoundManager(context) }
+    val soundState by listenViewModel.soundState.collectAsState()
 
     if (result.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -273,7 +276,9 @@ fun ListenResultFragment(
                 MainButtonView(
                     onClick = {
                         showBottomSheet = true
-                        listenViewModel.playClickSound(context)
+                        if (soundState) {
+                            listenViewModel.playSound()
+                        }
                     },
                     text = stringResource(R.string.view_result),
                     buttonColor = LightGray
@@ -282,7 +287,9 @@ fun ListenResultFragment(
                 MainButtonView(
                     onClick = {
                         listenViewModel.toHomeScreen()
-                        listenViewModel.playClickSound(context)
+                        if (soundState) {
+                            listenViewModel.playSound()
+                        }
                     },
                     text = stringResource(R.string.return_home),
                     buttonColor = Green

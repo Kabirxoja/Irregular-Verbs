@@ -49,6 +49,7 @@ import uz.kabir.irregularverbs.R
 import uz.kabir.irregularverbs.presentation.ui.theme.CustomTheme
 import uz.kabir.irregularverbs.domain.model.IrregularVerbTranslated
 import uz.kabir.irregularverbs.presentation.ui.state.AppLanguage
+import uz.kabir.irregularverbs.presentation.ui.utils.SoundManager
 import uz.kabir.irregularverbs.presentation.ui.utils.toHighlightedColorText
 
 
@@ -57,16 +58,21 @@ fun LearnFragment(
     navHostController: NavHostController,
     learnViewModel: LearnViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
+    val soundManager = remember { SoundManager(context) }
+    val soundState by learnViewModel.soundState.collectAsState()
+    val verbs by learnViewModel.verbs.collectAsState()
+    val getLanguage by learnViewModel.language.collectAsState()
+
     LaunchedEffect(Unit) {
         learnViewModel.getLanguage()
         learnViewModel.getVerbsByLevel("beginner")
         learnViewModel.initTTS()
+        learnViewModel.playClick.collect {
+            soundManager.playClickSound()
+        }
     }
 
-    val verbs by learnViewModel.verbs.collectAsState()
-    val getLanguage by learnViewModel.language.collectAsState()
-    val soundState by learnViewModel.soundState.collectAsState()
-    val localContext = LocalContext.current
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -75,7 +81,9 @@ fun LearnFragment(
         Column(modifier = Modifier.fillMaxSize()) {
             LevelTopBar(onLevelSelected = { level ->
                 learnViewModel.getVerbsByLevel(level)
-                learnViewModel.playClickSound(localContext)
+                if (soundState){
+                    learnViewModel.playSound()
+                }
             })
 
             LazyColumn(

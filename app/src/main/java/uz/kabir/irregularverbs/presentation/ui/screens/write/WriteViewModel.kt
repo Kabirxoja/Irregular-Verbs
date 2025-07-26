@@ -26,7 +26,6 @@ import uz.kabir.irregularverbs.domain.usecase.GetVerbsByGroupIdUseCase
 import uz.kabir.irregularverbs.domain.usecase.UpdateProgressUseCase
 import uz.kabir.irregularverbs.presentation.ui.theme.DarkGreen
 import uz.kabir.irregularverbs.presentation.ui.theme.DarkRed
-import uz.kabir.irregularverbs.presentation.ui.utils.AudioHelper
 import uz.kabir.irregularverbs.presentation.ui.utils.toHighlightedColorText
 import javax.inject.Inject
 import kotlin.random.Random
@@ -81,12 +80,29 @@ class WriteViewModel @Inject constructor(
     private val _navigationSharedFlow = MutableSharedFlow<WriteNavEvent>(extraBufferCapacity = 1)
     val navigationSharedFlow = _navigationSharedFlow.asSharedFlow()
 
-    val soundState: StateFlow<Boolean> = getSoundStateUseCase().stateIn(
+    val soundState: StateFlow<Boolean> = getSoundStateUseCase.invoke().stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = false
     )
 
+    private val _playClick = MutableSharedFlow<Unit>()
+    val playClick = _playClick.asSharedFlow()
+
+    fun playSound() {
+        viewModelScope.launch {
+            _playClick.emit(Unit)
+        }
+    }
+
+    private val _sendReport = MutableSharedFlow<Unit>()
+    val sendReport = _sendReport.asSharedFlow()
+
+    fun sendReport(){
+        viewModelScope.launch {
+            _sendReport.emit(Unit)
+        }
+    }
 
     fun startTimer() {
         timerJob?.cancel()
@@ -232,10 +248,6 @@ class WriteViewModel @Inject constructor(
         }
     }
 
-    fun playClickSound(context:Context){
-        if(soundState.value){
-            AudioHelper.playClick(context)
-        }
-    }
+
 
 }

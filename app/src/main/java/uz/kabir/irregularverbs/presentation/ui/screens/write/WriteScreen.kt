@@ -65,7 +65,8 @@ import uz.kabir.irregularverbs.presentation.ui.theme.CustomTheme
 import uz.kabir.irregularverbs.presentation.ui.theme.Green
 import uz.kabir.irregularverbs.presentation.ui.theme.LightGray
 import uz.kabir.irregularverbs.presentation.ui.theme.Red
-import uz.kabir.irregularverbs.presentation.ui.screens.write.WriteViewModel
+import uz.kabir.irregularverbs.presentation.ui.utils.ReportManager
+import uz.kabir.irregularverbs.presentation.ui.utils.SoundManager
 import java.util.Locale
 
 
@@ -85,23 +86,20 @@ fun WriteFragment(
     val definitionEnglish by writeViewmodel.definitionEnglish.collectAsState()
     val progress by writeViewmodel.currentProgress.collectAsState()
     val timeSeconds by writeViewmodel.timerStateFlow.collectAsState()
-    val soundState by writeViewmodel.soundState.collectAsState()
+    val groupId = writeViewmodel.groupId
+
+
     val context = LocalContext.current
+    val soundManager = remember { SoundManager(context) }
+    val soundState by writeViewmodel.soundState.collectAsState()
 
-    Log.d("WriteFragment", "Verbs: $verbs")
-    Log.d("WriteFragment", "Current Index: $currentIndex")
-    Log.d("WriteFragment", "Current Question: $currentQuestion")
-    Log.d("WriteFragment", "Is Bottom Sheet Visible: $isBottomSheetVisible")
-    Log.d("WriteFragment", "Correct Count: $correctCount")
-    Log.d("WriteFragment", "Is Finished: $isFinished")
-    Log.d("TTTTTTTT", "result: $result")
-    Log.d("EEEEE", definitionEnglish.toString())
+    val reportManager = remember { ReportManager(context) }
 
-    val hideVerb2 = currentQuestion?.isVerb2Hidden ?: false
-
-    val verb1 = currentQuestion?.verb1
-    val verb2 = currentQuestion?.verb2
-    val verb3 = currentQuestion?.verb3
+    LaunchedEffect(Unit) {
+        writeViewmodel.playClick.collect {
+            soundManager.playClickSound()
+        }
+    }
 
     LaunchedEffect(Unit) {
         writeViewmodel.getVerbsByGroupId()
@@ -112,6 +110,14 @@ fun WriteFragment(
         }
     }
 
+    LaunchedEffect(Unit) {
+        writeViewmodel.sendReport.collect {
+            reportManager.sendBugReport(
+                testNumber = groupId,
+                testVerb = currentQuestion?.verb1 ?: ""
+            )
+        }
+    }
 
     DisposableEffect(Unit) {
         writeViewmodel.startTimer()
@@ -119,6 +125,12 @@ fun WriteFragment(
             writeViewmodel.stopTimer()
         }
     }
+
+
+    val hideVerb2 = currentQuestion?.isVerb2Hidden ?: false
+    val verb1 = currentQuestion?.verb1
+    val verb2 = currentQuestion?.verb2
+    val verb3 = currentQuestion?.verb3
 
     var inputQuery by remember { mutableStateOf("") }
     Surface(modifier = Modifier.fillMaxSize(), color = CustomTheme.colors.backgroundColor) {
@@ -135,7 +147,10 @@ fun WriteFragment(
             TopBarWrite(
                 onBackClick = {
                     navController.popBackStack()
-                    writeViewmodel.playClickSound(context)
+                    if (soundState) {
+                        writeViewmodel.playSound()
+                    }
+
                 },
                 progress = progress,
                 timeSeconds = timeSeconds,
@@ -241,7 +256,10 @@ fun WriteFragment(
                 enabled = inputQuery != "",
                 onCheckClick = {
                     writeViewmodel.checkAnswer(inputQuery)
-                    writeViewmodel.playClickSound(context)
+                    if (soundState) {
+                        writeViewmodel.playSound()
+                    }
+
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -256,10 +274,16 @@ fun WriteFragment(
                         onDismiss = {
                             inputQuery = ""
                             writeViewmodel.continueNextQuestion()
-                            writeViewmodel.playClickSound(context)
+                            if (soundState) {
+                                writeViewmodel.playSound()
+                            }
+
                         },
                         definitionEnglish = definitionEnglish,
-                        definitionTranslation = currentQuestion?.translationExample
+                        definitionTranslation = currentQuestion?.translationExample,
+                        onReportClick = {
+                            writeViewmodel.sendReport()
+                        }
                     )
                 }
             }
@@ -273,11 +297,12 @@ fun WriteFragment(
 fun ResultBottomSheetWrite(
     correct: Boolean,
     onDismiss: () -> Unit,
+    onReportClick: () -> Unit,
     definitionEnglish: AnnotatedString,
     definitionTranslation: String?
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val color = if (correct) CustomTheme.colors.mainGreen else CustomTheme.colors.mainRed
+    val color = if (correct) Green else Red
     val text = if (correct) "Correct" else "Incorrect"
     val icon = if (correct) R.drawable.ic_correct else R.drawable.ic_incorrect
 
@@ -307,6 +332,21 @@ fun ResultBottomSheetWrite(
                     modifier = Modifier.padding(start = 8.dp),
                     style = CustomTheme.typography.largeText
                 )
+                Spacer(modifier = Modifier.weight(1f))
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_report),
+                    contentDescription = "Report",
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) {
+                            onReportClick()
+                        },
+                    tint = Color.Unspecified,
+
+                    )
             }
 
             Spacer(modifier = Modifier.height(12.dp))

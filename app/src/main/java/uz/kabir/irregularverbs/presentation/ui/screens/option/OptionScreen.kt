@@ -65,6 +65,7 @@ import uz.kabir.irregularverbs.presentation.ui.screens.optionresult.MainButtonVi
 import uz.kabir.irregularverbs.presentation.ui.theme.Blue
 import uz.kabir.irregularverbs.presentation.ui.theme.Orange
 import uz.kabir.irregularverbs.presentation.ui.theme.Red
+import uz.kabir.irregularverbs.presentation.ui.utils.ReportManager
 import uz.kabir.irregularverbs.presentation.ui.utils.SoundManager
 import java.util.Locale
 
@@ -84,8 +85,12 @@ fun OptionFragment(
     val timeSeconds by optionViewModel.timerStateFlow.collectAsState()
     val progress by optionViewModel.currentProgress.collectAsState()
     val groupId = optionViewModel.groupId
-    val soundState by optionViewModel.soundState.collectAsState()
+
     val context = LocalContext.current
+    val soundManager = remember { SoundManager(context) }
+    val soundState by optionViewModel.soundState.collectAsState()
+    val reportManager = remember { ReportManager(context) }
+
 
     LaunchedEffect(Unit) {
         optionViewModel.navigationSharedFlow.collect { event ->
@@ -93,12 +98,22 @@ fun OptionFragment(
                 navController.navigate(Screens.OptionResult.passGroupId(event.groupId))
             }
         }
-
     }
 
-    Log.d("groupIdOUT", "groupId = $groupId")
+    LaunchedEffect(Unit) {
+        optionViewModel.playClick.collect {
+            soundManager.playClickSound()
+        }
+    }
 
-    optionViewModel.startTimer()
+    LaunchedEffect(Unit) {
+        optionViewModel.sendReport.collect {
+            reportManager.sendBugReport(
+                testNumber = groupId,
+                testVerb = question?.baseForm ?: ""
+            )
+        }
+    }
 
     LaunchedEffect(key1 = groupId) {
         groupId.let {
@@ -113,14 +128,12 @@ fun OptionFragment(
         }
     }
 
-    Log.d("OptionFragment", "groupId: $groupId")
-    Log.d("OptionFragmentVERBS", "verbs: ${verbs.size}")
-    Log.d("OptionFragment", "currentIndex: $currentIndex")
-    Log.d("OptionFragment", "correctCount: $correctCount")
+    optionViewModel.startTimer()
 
-    Log.d("OptionFragmentRRR", "verbs: $finalList")
+
 
     Surface(modifier = Modifier.fillMaxSize(), color = CustomTheme.colors.backgroundColor) {
+
         Box(modifier = Modifier.fillMaxSize()) {
             Column(
                 modifier = Modifier
@@ -130,7 +143,9 @@ fun OptionFragment(
                 TopBarOption(
                     onBackClick = {
                         navController.popBackStack()
-                        optionViewModel.playClickSound(context)
+                        if (soundState) {
+                            optionViewModel.playSound()
+                        }
                     },
                     progress = progress,
                     timeSeconds = timeSeconds
@@ -175,7 +190,9 @@ fun OptionFragment(
                     selected = selected,
                     onOptionSelect = {
                         optionViewModel.selectAnswer(it)
-                        optionViewModel.playClickSound(context)
+                        if (soundState) {
+                            optionViewModel.playSound()
+                        }
                     },
                     modifier = Modifier.wrapContentHeight(),
                 )
@@ -187,7 +204,9 @@ fun OptionFragment(
                     enabled = selected != null,
                     onCheckClick = {
                         optionViewModel.checkAnswer()
-                        optionViewModel.playClickSound(context)
+                        if (soundState) {
+                            optionViewModel.playSound()
+                        }
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -201,11 +220,13 @@ fun OptionFragment(
                     correct = selected == question?.correctAnswer,
                     onDismiss = {
                         optionViewModel.continueToNextQuestion()
-                        optionViewModel.playClickSound(context)
+                        if (soundState) {
+                            optionViewModel.playSound()
+                        }
                     },
                     definition = definition,
                     onReportClick = {
-                        optionViewModel.reportIntent(context)
+                        optionViewModel.sendReport()
                     }
                 )
             }
@@ -499,12 +520,19 @@ fun ResultBottomSheetOption(
                 Icon(
                     painter = painterResource(id = R.drawable.ic_report),
                     contentDescription = "Report",
-                    modifier = Modifier.size(24.dp).clickable{
-                        onReportClick()
-                    },
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) {
+                            onReportClick()
+                        },
+
+
                     tint = Color.Unspecified,
 
-                )
+                    )
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -539,12 +567,3 @@ fun ResultBottomSheetOption(
         }
     }
 }
-
-@Composable
-fun rememberSoundManager(): SoundManager {
-    val context = LocalContext.current
-    return remember(context) { SoundManager(context) }
-}
-
-
-
